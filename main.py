@@ -11,20 +11,21 @@ import re
 st.markdown(
     """
     <style>
-    /* Sidebar (Navigation Pane) */
+    /* Sidebar custom style */
     [data-testid="stSidebar"] {
         background-color: #f0f0f0;
         width: 240px !important;
         position: relative;
         padding: 10px;
     }
-    /* Sidebar Title */
+    /* Sidebar Title (aligned to top left, reduced font size) */
     .sidebar-title {
-        font-size: 1rem;
         margin: 0;
+        padding: 0;
+        font-size: 1rem;
         text-align: left;
     }
-    /* Navigation Links */
+    /* Navigation links styling */
     .custom-nav ul {
         list-style: none;
         margin: 0;
@@ -47,7 +48,7 @@ st.markdown(
         width: 100%;
         box-sizing: border-box;
     }
-    /* Sidebar Footer (Bottom Left of Sidebar) */
+    /* Sidebar footer (bottom left of sidebar) */
     .sidebar-footer {
         position: absolute;
         bottom: 10px;
@@ -55,24 +56,24 @@ st.markdown(
         font-size: 0.8rem;
         color: #555;
     }
-    /* Main Page Footer (Full Width) */
+    /* Main page footer (full-width, slightly taller) */
     .custom-footer {
         position: fixed;
         left: 0;
         bottom: 0;
-        width: 100%;
+        width: 100vw;
         background-color: #444444;
         color: white;
         display: flex;
         align-items: center;
         justify-content: flex-end;
-        padding: 4px 20px;
+        padding: 8px 20px;
         font-size: 0.9em;
         z-index: 99999;
     }
     .custom-footer a {
         color: #dddddd;
-        margin-left: 10px;
+        margin: 0 10px;
         text-decoration: none;
     }
     .custom-footer a:hover {
@@ -111,10 +112,11 @@ def load_criteria(filename):
             st.error(f"Excel file has only {df.shape[1]} columns but at least 13 are required. Check file formatting.")
             return None, None, None, None
         # Extract options:
-        role_options = df.columns[1:4].tolist()  # Columns B-D
+        role_options = df.columns[1:4].tolist()  # Columns B–D
+        # Remove "Caregiver" (case-insensitive)
         role_options = [opt for opt in role_options if opt.lower() != "caregiver"]
-        lifecycle_options = df.columns[5:9].tolist()  # Columns F-I
-        journey_options = df.columns[9:13].tolist()   # Columns J-M
+        lifecycle_options = df.columns[5:9].tolist()  # Columns F–I
+        journey_options = df.columns[9:13].tolist()   # Columns J–M
         matrix_df = df.copy()
         return role_options, lifecycle_options, journey_options, matrix_df
     except Exception as e:
@@ -144,7 +146,7 @@ disease_states = [
 disease_dropdown_options = [disease_placeholder] + disease_states
 
 # ------------------------------------
-# Helper: Filter Strategic Imperatives from Matrix (Sheet1)
+# Helper: Filter Strategic Imperatives (Sheet1 Matrix)
 # ------------------------------------
 def filter_strategic_imperatives(df, role, lifecycle, journey):
     if role not in df.columns or lifecycle not in df.columns or journey not in df.columns:
@@ -206,7 +208,7 @@ Return ONLY a JSON object with exactly the following keys: "description", "cost"
 # Sidebar Navigation Pane
 # ------------------------------------
 with st.sidebar:
-    st.markdown("<h2 class='sidebar-title'>Pharma AI Brand Manager</h2>", unsafe_allow_html=True)
+    st.markdown("<div class='sidebar-title'>Pharma AI Brand Manager</div>", unsafe_allow_html=True)
     st.markdown(
         """
         <div class="custom-nav">
