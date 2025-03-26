@@ -11,21 +11,22 @@ import re
 st.markdown(
     """
     <style>
-    /* Sidebar custom style */
+    /* Sidebar style */
     [data-testid="stSidebar"] {
         background-color: #f0f0f0;
         width: 240px !important;
         position: relative;
-        padding: 10px;
+        padding: 10px 10px 40px 10px;  /* Extra bottom padding to avoid overlap */
     }
-    /* Sidebar Title (aligned to top left, reduced font size) */
+    /* Sidebar Title: bold and flush to top left */
     .sidebar-title {
+        font-size: 1rem;
         margin: 0;
         padding: 0;
-        font-size: 1rem;
+        font-weight: bold;
         text-align: left;
     }
-    /* Navigation links styling */
+    /* Navigation Styling: less vertical spacing and aligned left */
     .custom-nav ul {
         list-style: none;
         margin: 0;
@@ -33,30 +34,24 @@ st.markdown(
     }
     .custom-nav li {
         margin: 0;
-        padding: 5px 0;
+        padding: 2px 0;  /* Reduced vertical padding */
+        text-align: left;
     }
     .custom-nav li a {
         text-decoration: none;
         color: inherit;
         display: block;
-        padding: 5px 10px;
+        padding: 2px 5px;
+        margin-left: 0; /* Align further to left */
     }
     .custom-nav li.active a {
         background-color: #d3d3d3;
         border-radius: 4px;
-        padding: 5px 10px;
+        padding: 2px 5px;
         width: 100%;
         box-sizing: border-box;
     }
-    /* Sidebar footer (bottom left of sidebar) */
-    .sidebar-footer {
-        position: absolute;
-        bottom: 10px;
-        left: 10px;
-        font-size: 0.8rem;
-        color: #555;
-    }
-    /* Main page footer (full-width, slightly taller) */
+    /* Full-width Footer (across entire page) */
     .custom-footer {
         position: fixed;
         left: 0;
@@ -66,17 +61,20 @@ st.markdown(
         color: white;
         display: flex;
         align-items: center;
-        justify-content: flex-end;
+        justify-content: space-between;
         padding: 8px 20px;
         font-size: 0.9em;
         z-index: 99999;
     }
-    .custom-footer a {
+    .custom-footer .left {
+        text-align: left;
+    }
+    .custom-footer .right a {
         color: #dddddd;
-        margin: 0 10px;
+        margin-left: 10px;
         text-decoration: none;
     }
-    .custom-footer a:hover {
+    .custom-footer .right a:hover {
         color: #ffffff;
     }
     /* Reduce vertical spacing for select boxes */
@@ -111,12 +109,10 @@ def load_criteria(filename):
         if df.shape[1] < 13:
             st.error(f"Excel file has only {df.shape[1]} columns but at least 13 are required. Check file formatting.")
             return None, None, None, None
-        # Extract options:
-        role_options = df.columns[1:4].tolist()  # Columns B–D
-        # Remove "Caregiver" (case-insensitive)
+        role_options = df.columns[1:4].tolist()  # Columns B-D
         role_options = [opt for opt in role_options if opt.lower() != "caregiver"]
-        lifecycle_options = df.columns[5:9].tolist()  # Columns F–I
-        journey_options = df.columns[9:13].tolist()   # Columns J–M
+        lifecycle_options = df.columns[5:9].tolist()  # Columns F-I
+        journey_options = df.columns[9:13].tolist()   # Columns J-M
         matrix_df = df.copy()
         return role_options, lifecycle_options, journey_options, matrix_df
     except Exception as e:
@@ -146,7 +142,7 @@ disease_states = [
 disease_dropdown_options = [disease_placeholder] + disease_states
 
 # ------------------------------------
-# Helper: Filter Strategic Imperatives (Sheet1 Matrix)
+# Helper: Filter Strategic Imperatives from Matrix (Sheet1)
 # ------------------------------------
 def filter_strategic_imperatives(df, role, lifecycle, journey):
     if role not in df.columns or lifecycle not in df.columns or journey not in df.columns:
@@ -208,24 +204,39 @@ Return ONLY a JSON object with exactly the following keys: "description", "cost"
 # Sidebar Navigation Pane
 # ------------------------------------
 with st.sidebar:
-    st.markdown("<div class='sidebar-title'>Pharma AI Brand Manager</div>", unsafe_allow_html=True)
+    st.markdown("<div class='sidebar-title'><strong>Pharma AI Brand Manager</strong></div>", unsafe_allow_html=True)
     st.markdown(
         """
         <div class="custom-nav">
           <ul>
             <li><a href="#">Find Real Patients</a></li>
-            <li class="active"><a href="#" style="display:block; padding: 5px 10px;">Tactical Plans</a></li>
+            <li class="active"><a href="#" style="display:block; padding: 2px 5px;">Tactical Plans</a></li>
             <li><a href="#">Strategic Imperatives</a></li>
             <li><a href="#">Landscape Analysis</a></li>
             <li><a href="#">Pipeline Outlook</a></li>
             <li><a href="#">Create Messaging</a></li>
-            <li><a href="#">Creative Campaign Concepts</a></li>
+            <li><a href="#">Campaign Concepts</a></li>
           </ul>
         </div>
         """,
         unsafe_allow_html=True
     )
-    st.markdown("<div class='sidebar-footer'>© Philip Storer 2025</div>", unsafe_allow_html=True)
+
+# ------------------------------------
+# Full-Width Footer (Main Page)
+# ------------------------------------
+footer_html = """
+<footer class="custom-footer">
+  <div class="left">© Philip Storer 2025</div>
+  <div class="right">
+    <a href="#">Terms of Use</a> |
+    <a href="#">Privacy Policy</a> |
+    <a href="#">Cookie Settings</a> |
+    <a href="#">Contact Us</a>
+  </div>
+</footer>
+"""
+st.markdown(footer_html, unsafe_allow_html=True)
 
 # ------------------------------------
 # Main Content Area
@@ -260,19 +271,7 @@ if (role_selected != role_placeholder and lifecycle_selected != lifecycle_placeh
         selected_differentiators = st.multiselect("Select up to 3 Product Differentiators", options=product_diff_options, max_selections=3)
         
         if selected_differentiators and len(selected_differentiators) > 0:
-            st.markdown("### Additional Actions")
-            col1, col2, col3, col4 = st.columns(4)
-            with col1:
-                gen_plan_pressed = st.button("Generate Strategic Plan", key="gen_plan")
-            with col2:
-                st.button("Competitive Landscape", key="comp_landscape")
-            with col3:
-                st.button("Generate Campaign", key="gen_campaign")
-            with col4:
-                st.button("Create Messaging", key="create_messaging")
-            st.button("Creative Campaign Concepts", key="creative_campaign")
-            
-            if gen_plan_pressed:
+            if st.button("Generate Strategic Plan", key="gen_plan"):
                 st.header("Tactical Recommendations")
                 try:
                     sheet3 = pd.read_excel("test.xlsx", sheet_name=2, header=0)
@@ -303,16 +302,3 @@ if (role_selected != role_placeholder and lifecycle_selected != lifecycle_placeh
         st.info("Please select at least one strategic imperative to proceed.")
 else:
     st.info("Please complete all criteria selections in Step 1 to proceed.")
-
-# ------------------------------------
-# Full-Width Footer (Main Page)
-# ------------------------------------
-footer_html = """
-<div class="custom-footer">
-  <a href="#">Terms of Use</a> |
-  <a href="#">Privacy Policy</a> |
-  <a href="#">Cookie Settings</a> |
-  <a href="#">Contact Us</a>
-</div>
-"""
-st.markdown(footer_html, unsafe_allow_html=True)
