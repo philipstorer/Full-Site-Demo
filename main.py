@@ -11,33 +11,21 @@ import re
 st.markdown(
     """
     <style>
-    /* Sidebar style */
+    /* Sidebar style: light gray background, fixed width */
     [data-testid="stSidebar"] {
         background-color: #f0f0f0;
         width: 240px !important;
-        position: relative;
-        padding: 10px 10px 40px 10px;  /* Extra bottom padding to avoid overlap */
+        padding: 10px;
     }
-    /* Sidebar Title (Logo) */
-    .sidebar-title {
-        position: absolute;
-        top: 0;
-        left: 0;
-        margin: 10px;
-        padding: 0;
-        font-size: 1rem;
-        font-weight: bold;
-        text-align: left;
-    }
-    /* Navigation Styling */
+    /* Navigation styling */
     .custom-nav ul {
         list-style: none;
-        margin: 60px 0 0 0; /* Leave space for logo at the top */
+        margin: 0;
         padding: 0;
     }
     .custom-nav li {
         margin: 0;
-        padding: 2px 0;  /* Reduced vertical padding */
+        padding: 2px 0;
         text-align: left;
     }
     .custom-nav li a {
@@ -45,7 +33,6 @@ st.markdown(
         color: inherit;
         display: block;
         padding: 2px 5px;
-        margin-left: 0; /* Align further to left */
     }
     .custom-nav li.active a {
         background-color: #d3d3d3;
@@ -54,7 +41,7 @@ st.markdown(
         width: 100%;
         box-sizing: border-box;
     }
-    /* Main page footer (full width) */
+    /* Full-width Footer */
     .custom-footer {
         position: fixed;
         left: 0;
@@ -63,7 +50,7 @@ st.markdown(
         background-color: #444444;
         color: white;
         display: flex;
-        justify-content: flex-end;
+        justify-content: space-between;
         align-items: center;
         padding: 8px 20px;
         font-size: 0.9em;
@@ -77,7 +64,6 @@ st.markdown(
     .custom-footer a:hover {
         color: #ffffff;
     }
-    /* Sidebar footer removed (copyright now in main footer on left) */
     /* Reduce vertical spacing for select boxes */
     .stSelectbox, .stMultiSelect {
         margin-top: 2px;
@@ -112,6 +98,7 @@ def load_criteria(filename):
             return None, None, None, None
         # Extract options:
         role_options = df.columns[1:4].tolist()  # Columns B–D
+        # Remove "Caregiver" (case-insensitive)
         role_options = [opt for opt in role_options if opt.lower() != "caregiver"]
         lifecycle_options = df.columns[5:9].tolist()  # Columns F–I
         journey_options = df.columns[9:13].tolist()   # Columns J–M
@@ -206,7 +193,7 @@ Return ONLY a JSON object with exactly the following keys: "description", "cost"
 # Sidebar Navigation Pane
 # ------------------------------------
 with st.sidebar:
-    st.markdown("<div class='sidebar-title'><strong>Pharma AI Brand Manager</strong></div>", unsafe_allow_html=True)
+    # Remove any title from the sidebar; navigation only.
     st.markdown(
         """
         <div class="custom-nav">
@@ -225,7 +212,7 @@ with st.sidebar:
     )
 
 # ------------------------------------
-# Full-Width Footer (Main Page) with Left-Aligned Copyright
+# Full-Width Footer (Main Page) with Left-Aligned Copyright in Footer
 # ------------------------------------
 footer_html = """
 <footer class="custom-footer">
