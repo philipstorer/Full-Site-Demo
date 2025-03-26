@@ -5,19 +5,18 @@ import json
 import os
 import re
 
-# ------------------------------------
-# Optional: Load Additional CSS from static/style.css
-# ------------------------------------
+# -----------------------
+# Optional: Load Additional CSS
+# -----------------------
 def local_css(file_name):
     with open(file_name) as f:
         st.markdown(f"<style>{f.read()}</style>", unsafe_allow_html=True)
 
+# Load local CSS if available (e.g., custom styles)
 if os.path.exists("static/style.css"):
     local_css("static/style.css")
 
-# ------------------------------------
 # Inline CSS for login page, sidebar, and footer
-# ------------------------------------
 st.markdown(
     """
     <style>
@@ -50,62 +49,36 @@ st.markdown(
     /* Login page style */
     .login-container {
         display: flex;
-        flex-direction: column;
         align-items: center;
         justify-content: center;
         height: 100vh;
-        background-color: #f3f2f1;
+        background: rgba(243,242,241,0.9);
     }
     .login-box {
         background: white;
         padding: 40px;
         border-radius: 8px;
-        box-shadow: 0px 0px 10px rgba(0,0,0,0.2);
+        box-shadow: 0 0 10px rgba(0,0,0,0.2);
         width: 420px;
+        text-align: center;
         font-family: "Segoe UI", sans-serif;
     }
-    .login-box img {
-        display: block;
-        margin: 0 auto 20px;
-        width: 100px;
-    }
     .login-box h2 {
-        text-align: center;
         margin-bottom: 20px;
         font-weight: 400;
         color: #201f1e;
     }
-    .login-box label {
-        font-size: 0.9em;
-        color: #201f1e;
-        margin-bottom: 5px;
-    }
-    .login-box input[type="text"] {
-        width: 100%;
-        padding: 10px;
-        margin-bottom: 20px;
-        border: 1px solid #ccc;
-        border-radius: 4px;
-    }
-    .login-box .btn {
-        width: 100%;
-        padding: 10px;
+    .login-box button {
+        padding: 10px 20px;
         background-color: #0078d4;
         color: white;
         border: none;
         border-radius: 4px;
+        font-size: 1.1em;
         cursor: pointer;
-        font-size: 0.9em;
-        margin-bottom: 10px;
     }
-    .login-box .btn:hover {
+    .login-box button:hover {
         background-color: #005ea2;
-    }
-    .login-box .or {
-        text-align: center;
-        margin: 20px 0;
-        color: #605e5c;
-        font-size: 0.9em;
     }
     </style>
     """,
@@ -130,34 +103,23 @@ else:
 if "logged_in" not in st.session_state:
     st.session_state.logged_in = False
 
-def show_login_page():
-    login_html = """
-    <div class="login-container">
-      <div class="login-box">
-        <img src="https://upload.wikimedia.org/wikipedia/commons/4/44/Microsoft_logo.svg" alt="Microsoft Logo">
-        <h2>Sign in</h2>
-        <label>Email, phone, or Skype</label>
-        <input type="text" placeholder="Enter your email">
-        <button class="btn" onclick="window.parent.postMessage('login','*')">Next</button>
-        <div class="or">or</div>
-        <button class="btn" onclick="window.parent.postMessage('login','*')">Sign in with Microsoft</button>
-      </div>
-    </div>
-    <script>
-      window.addEventListener('message', function(event) {
-          if (event.data === 'login') {
-              window.parent.postMessage('login_success','*');
-          }
-      });
-    </script>
-    """
-    st.markdown(login_html, unsafe_allow_html=True)
-
-# Show login page if not logged in
+# ------------------------------------
+# Login Page (Full Page)
+# ------------------------------------
 if not st.session_state.logged_in:
-    show_login_page()
-    # Provide a fallback button for development (simulate login)
-    if st.button("Simulate Login"):
+    st.markdown(
+        """
+        <div class="login-container">
+            <div class="login-box">
+                <h2>Sign in</h2>
+                <button onclick="window.parent.postMessage('login','*')">Sign in with Microsoft</button>
+            </div>
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
+    # Provide a fallback button to simulate SSO (for development)
+    if st.button("Simulate Microsoft SSO", key="simulate_sso"):
         st.session_state.logged_in = True
         st.experimental_rerun()
     st.stop()
@@ -180,7 +142,7 @@ with st.sidebar:
     """, unsafe_allow_html=True)
 
 # ------------------------------------
-# Load Criteria from Excel (Sheet1)
+# Load Data from Excel (Sheet1) for Criteria
 # ------------------------------------
 @st.cache_data
 def load_criteria(filename):
@@ -189,10 +151,11 @@ def load_criteria(filename):
         if df.shape[1] < 13:
             st.error(f"Excel file has only {df.shape[1]} columns but at least 13 are required. Check file formatting.")
             return None, None, None, None
-        role_options = df.columns[1:4].tolist()  # B–D
+        # Extract options from header row:
+        role_options = df.columns[1:4].tolist()  # Columns B-D
         role_options = [opt for opt in role_options if opt.lower() != "caregiver"]
-        lifecycle_options = df.columns[5:9].tolist()  # F–I
-        journey_options = df.columns[9:13].tolist()   # J–M
+        lifecycle_options = df.columns[5:9].tolist()  # Columns F-I
+        journey_options = df.columns[9:13].tolist()   # Columns J-M
         matrix_df = df.copy()
         return role_options, lifecycle_options, journey_options, matrix_df
     except Exception as e:
