@@ -6,22 +6,26 @@ import os
 import re
 
 # ------------------------------------
-# OPTIONAL: Load Additional CSS
+# Optional: Load Additional CSS from static/style.css
 # ------------------------------------
 def local_css(file_name):
     with open(file_name) as f:
         st.markdown(f"<style>{f.read()}</style>", unsafe_allow_html=True)
 
-# Inject inline CSS for overlay, sidebar, and footer
+if os.path.exists("static/style.css"):
+    local_css("static/style.css")
+
+# ------------------------------------
+# Inline CSS for login page, sidebar, and footer
+# ------------------------------------
 st.markdown(
     """
     <style>
     /* Sidebar custom style: light gray background, narrower width */
     [data-testid="stSidebar"] {
         background-color: #f0f0f0;
-        width: 240px !important; /* Adjust as needed */
+        width: 240px !important;
     }
-
     /* Footer style */
     .custom-footer {
         position: fixed;
@@ -43,91 +47,70 @@ st.markdown(
     .custom-footer a:hover {
         color: #ffffff;
     }
-
-    /* Login overlay with partial transparency */
-    .login-overlay {
-        position: fixed;
-        top: 0; left: 0;
-        width: 100%; height: 100%;
-        background-color: rgba(0, 0, 0, 0.5);
-        z-index: 9999;
+    /* Login page style */
+    .login-container {
         display: flex;
+        flex-direction: column;
         align-items: center;
         justify-content: center;
+        height: 100vh;
+        background-color: #f3f2f1;
     }
     .login-box {
-        background-color: #ffffff;
+        background: white;
         padding: 40px;
         border-radius: 8px;
-        box-shadow: 0 0 10px rgba(0,0,0,0.2);
+        box-shadow: 0px 0px 10px rgba(0,0,0,0.2);
         width: 420px;
-        text-align: left;
         font-family: "Segoe UI", sans-serif;
     }
+    .login-box img {
+        display: block;
+        margin: 0 auto 20px;
+        width: 100px;
+    }
     .login-box h2 {
+        text-align: center;
         margin-bottom: 20px;
         font-weight: 400;
+        color: #201f1e;
     }
     .login-box label {
-        display: block;
-        margin-bottom: 5px;
         font-size: 0.9em;
+        color: #201f1e;
+        margin-bottom: 5px;
     }
     .login-box input[type="text"] {
         width: 100%;
         padding: 10px;
-        margin-bottom: 8px;
+        margin-bottom: 20px;
         border: 1px solid #ccc;
         border-radius: 4px;
     }
-    .login-box a {
-        color: #0067c0;
-        text-decoration: none;
-        font-size: 0.9em;
-    }
-    .login-box a:hover {
-        text-decoration: underline;
-    }
-    .login-box .links-row {
-        margin: 8px 0;
-    }
-    .login-box .buttons-row {
-        margin-top: 20px;
-        display: flex;
-        justify-content: space-between;
-    }
-    .login-box button {
+    .login-box .btn {
+        width: 100%;
+        padding: 10px;
         background-color: #0078d4;
-        color: #fff;
+        color: white;
         border: none;
         border-radius: 4px;
-        padding: 10px 16px;
         cursor: pointer;
         font-size: 0.9em;
+        margin-bottom: 10px;
     }
-    .login-box button:hover {
+    .login-box .btn:hover {
         background-color: #005ea2;
     }
-    .login-box .ms-button {
-        width: 100%;
-        margin-top: 10px;
-        background-color: #0078d4;
-        display: inline-block;
+    .login-box .or {
         text-align: center;
-    }
-    .login-box .or-sep {
-        text-align: center;
-        margin-top: 20px;
+        margin: 20px 0;
+        color: #605e5c;
         font-size: 0.9em;
     }
     </style>
     """,
     unsafe_allow_html=True
 )
-
-# If you have local style.css, load it here
-if os.path.exists("static/style.css"):
-    local_css("static/style.css")
 
 # ------------------------------------
 # Secure API Key Handling
@@ -147,60 +130,36 @@ else:
 if "logged_in" not in st.session_state:
     st.session_state.logged_in = False
 
-def show_login_overlay():
+def show_login_page():
+    login_html = """
+    <div class="login-container">
+      <div class="login-box">
+        <img src="https://upload.wikimedia.org/wikipedia/commons/4/44/Microsoft_logo.svg" alt="Microsoft Logo">
+        <h2>Sign in</h2>
+        <label>Email, phone, or Skype</label>
+        <input type="text" placeholder="Enter your email">
+        <button class="btn" onclick="window.parent.postMessage('login','*')">Next</button>
+        <div class="or">or</div>
+        <button class="btn" onclick="window.parent.postMessage('login','*')">Sign in with Microsoft</button>
+      </div>
+    </div>
+    <script>
+      window.addEventListener('message', function(event) {
+          if (event.data === 'login') {
+              window.parent.postMessage('login_success','*');
+          }
+      });
+    </script>
     """
-    Renders a transparent overlay that approximates a Microsoft sign-in page.
-    Any button press logs the user in.
-    """
-    st.markdown(
-        """
-        <div class="login-overlay">
-          <div class="login-box">
-            <h2>Sign in</h2>
-            <label>Email, phone, or Skype</label>
-        """,
-        unsafe_allow_html=True
-    )
+    st.markdown(login_html, unsafe_allow_html=True)
 
-    # Single form with multiple submit buttons
-    with st.form("login_form", clear_on_submit=True):
-        user_email = st.text_input("", key="user_email_overlay")
-        st.markdown(
-            """
-            <div class="links-row">
-              <a href="#">No account? Create one!</a><br>
-              <a href="#">Can't access your account?</a>
-            </div>
-            <div class="buttons-row">
-            """,
-            unsafe_allow_html=True
-        )
-        colA, colB = st.columns(2)
-        with colA:
-            back_btn = st.form_submit_button("Back")
-        with colB:
-            next_btn = st.form_submit_button("Next")
-        st.markdown("</div>", unsafe_allow_html=True)
-    
-    st.markdown(
-        """
-        <div class="or-sep">or</div>
-        """,
-        unsafe_allow_html=True
-    )
-
-    # Another form for the MS button
-    with st.form("ms_form", clear_on_submit=True):
-        ms_btn = st.form_submit_button("Sign in with Microsoft", args=None, kwargs=None)
-        st.markdown("</div></div>", unsafe_allow_html=True)
-
-    # If any button pressed -> log in
-    if back_btn or next_btn or ms_btn:
+# Show login page if not logged in
+if not st.session_state.logged_in:
+    show_login_page()
+    # Provide a fallback button for development (simulate login)
+    if st.button("Simulate Login"):
         st.session_state.logged_in = True
         st.experimental_rerun()
-
-if not st.session_state.logged_in:
-    show_login_overlay()
     st.stop()
 
 # ------------------------------------
@@ -208,7 +167,6 @@ if not st.session_state.logged_in:
 # ------------------------------------
 with st.sidebar:
     st.markdown("<h2 style='margin-top:0;'>Pharma AI Brand Manager</h2>", unsafe_allow_html=True)
-    # Navigation links
     st.markdown("""
     <ul style="list-style-type: none; padding-left: 0; margin: 0;">
       <li><a href="#" style="text-decoration: none; color: inherit;">Find Real Patients</a></li>
@@ -222,7 +180,7 @@ with st.sidebar:
     """, unsafe_allow_html=True)
 
 # ------------------------------------
-# Load Data from Excel (Sheet1)
+# Load Criteria from Excel (Sheet1)
 # ------------------------------------
 @st.cache_data
 def load_criteria(filename):
@@ -245,7 +203,9 @@ role_options, lifecycle_options, journey_options, matrix_df = load_criteria("tes
 if any(v is None for v in [role_options, lifecycle_options, journey_options, matrix_df]):
     st.stop()
 
-# Placeholders & Disease State
+# ------------------------------------
+# Define Placeholders and Disease State Options
+# ------------------------------------
 role_placeholder = "Audience"
 lifecycle_placeholder = "Product Life Cycle"
 journey_placeholder = "Customer Journey Focus"
@@ -262,7 +222,7 @@ disease_states = [
 disease_dropdown_options = [disease_placeholder] + disease_states
 
 # ------------------------------------
-# Filter Strategic Imperatives
+# Helper: Filter Strategic Imperatives (Sheet1 Matrix)
 # ------------------------------------
 def filter_strategic_imperatives(df, role, lifecycle, journey):
     if role not in df.columns or lifecycle not in df.columns or journey not in df.columns:
@@ -280,7 +240,7 @@ def filter_strategic_imperatives(df, role, lifecycle, journey):
         return []
 
 # ------------------------------------
-# Generate AI Tactic
+# Helper: Generate Tactical Recommendation via OpenAI API
 # ------------------------------------
 def generate_ai_output(tactic_text, selected_differentiators):
     differentiators_text = ", ".join(selected_differentiators) if selected_differentiators else "None"
@@ -321,7 +281,7 @@ Return ONLY a JSON object with exactly the following keys: "description", "cost"
         return {"description": "N/A", "cost": "N/A", "timeframe": "N/A"}
 
 # ------------------------------------
-# Steps 1-3
+# Main Steps of the App
 # ------------------------------------
 st.header("Step 1: Select Your Criteria")
 role_selected = st.selectbox("", role_dropdown_options)
