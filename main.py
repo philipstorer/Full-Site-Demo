@@ -5,18 +5,19 @@ import json
 import os
 import re
 
-# -----------------------
-# Optional: Load Additional CSS
-# -----------------------
+# ------------------------------------
+# Optional: Load Additional CSS from static/style.css
+# ------------------------------------
 def local_css(file_name):
     with open(file_name) as f:
         st.markdown(f"<style>{f.read()}</style>", unsafe_allow_html=True)
 
-# Load local CSS if available (e.g., custom styles)
 if os.path.exists("static/style.css"):
     local_css("static/style.css")
 
-# Inline CSS for login page, sidebar, and footer
+# ------------------------------------
+# Inline CSS for Navigation, Sidebar, and Footer
+# ------------------------------------
 st.markdown(
     """
     <style>
@@ -25,7 +26,34 @@ st.markdown(
         background-color: #f0f0f0;
         width: 240px !important;
     }
-    /* Footer style */
+    /* Sidebar Navigation Styling */
+    .custom-nav ul {
+        list-style: none;
+        margin: 0;
+        padding: 0;
+    }
+    .custom-nav li {
+        margin: 0;
+        padding: 8px 10px;
+    }
+    .custom-nav li a {
+        text-decoration: none;
+        color: inherit;
+        display: block;
+    }
+    /* Highlight the Tactical Plans link as active */
+    .custom-nav li.active {
+        background-color: #d3d3d3;
+        border-radius: 4px;
+        padding: 10px 10px;
+    }
+    /* Sidebar Title Styling */
+    .sidebar-title {
+        font-size: 1.5rem;
+        margin-top: 0;
+        margin-bottom: 20px;
+    }
+    /* Footer style aligned to right */
     .custom-footer {
         position: fixed;
         left: 0;
@@ -33,52 +61,18 @@ st.markdown(
         width: 100%;
         background-color: #444444;
         color: white;
-        text-align: center;
-        padding: 10px 0;
+        text-align: right;
+        padding: 10px 20px;
         font-size: 0.9em;
         z-index: 99999;
     }
     .custom-footer a {
         color: #dddddd;
-        margin: 0 10px;
+        margin-left: 10px;
         text-decoration: none;
     }
     .custom-footer a:hover {
         color: #ffffff;
-    }
-    /* Login page style */
-    .login-container {
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        height: 100vh;
-        background: rgba(243,242,241,0.9);
-    }
-    .login-box {
-        background: white;
-        padding: 40px;
-        border-radius: 8px;
-        box-shadow: 0 0 10px rgba(0,0,0,0.2);
-        width: 420px;
-        text-align: center;
-        font-family: "Segoe UI", sans-serif;
-    }
-    .login-box h2 {
-        margin-bottom: 20px;
-        font-weight: 400;
-        color: #201f1e;
-    }
-    .login-box button {
-        padding: 10px 20px;
-        background-color: #0078d4;
-        color: white;
-        border: none;
-        border-radius: 4px;
-        font-size: 1.1em;
-        cursor: pointer;
-    }
-    .login-box button:hover {
-        background-color: #005ea2;
     }
     </style>
     """,
@@ -98,51 +92,7 @@ else:
     openai.api_key = openai_api_key
 
 # ------------------------------------
-# Manage Login State
-# ------------------------------------
-if "logged_in" not in st.session_state:
-    st.session_state.logged_in = False
-
-# ------------------------------------
-# Login Page (Full Page)
-# ------------------------------------
-if not st.session_state.logged_in:
-    st.markdown(
-        """
-        <div class="login-container">
-            <div class="login-box">
-                <h2>Sign in</h2>
-                <button onclick="window.parent.postMessage('login','*')">Sign in with Microsoft</button>
-            </div>
-        </div>
-        """,
-        unsafe_allow_html=True
-    )
-    # Provide a fallback button to simulate SSO (for development)
-    if st.button("Simulate Microsoft SSO", key="simulate_sso"):
-        st.session_state.logged_in = True
-        st.experimental_rerun()
-    st.stop()
-
-# ------------------------------------
-# Sidebar Navigation Pane
-# ------------------------------------
-with st.sidebar:
-    st.markdown("<h2 style='margin-top:0;'>Pharma AI Brand Manager</h2>", unsafe_allow_html=True)
-    st.markdown("""
-    <ul style="list-style-type: none; padding-left: 0; margin: 0;">
-      <li><a href="#" style="text-decoration: none; color: inherit;">Find Real Patients</a></li>
-      <li><a href="#" style="text-decoration: none; color: inherit;">Tactical Plans</a></li>
-      <li><a href="#" style="text-decoration: none; color: inherit;">Strategic Imperatives</a></li>
-      <li><a href="#" style="text-decoration: none; color: inherit;">Landscape Analysis</a></li>
-      <li><a href="#" style="text-decoration: none; color: inherit;">Pipeline Outlook</a></li>
-      <li><a href="#" style="text-decoration: none; color: inherit;">Create Messaging</a></li>
-      <li><a href="#" style="text-decoration: none; color: inherit;">Creative Campaign Concepts</a></li>
-    </ul>
-    """, unsafe_allow_html=True)
-
-# ------------------------------------
-# Load Data from Excel (Sheet1) for Criteria
+# Load Criteria from Sheet1 (A–M)
 # ------------------------------------
 @st.cache_data
 def load_criteria(filename):
@@ -151,7 +101,7 @@ def load_criteria(filename):
         if df.shape[1] < 13:
             st.error(f"Excel file has only {df.shape[1]} columns but at least 13 are required. Check file formatting.")
             return None, None, None, None
-        # Extract options from header row:
+        # Extract options:
         role_options = df.columns[1:4].tolist()  # Columns B-D
         role_options = [opt for opt in role_options if opt.lower() != "caregiver"]
         lifecycle_options = df.columns[5:9].tolist()  # Columns F-I
@@ -185,7 +135,7 @@ disease_states = [
 disease_dropdown_options = [disease_placeholder] + disease_states
 
 # ------------------------------------
-# Helper: Filter Strategic Imperatives (Sheet1 Matrix)
+# Helper: Filter Strategic Imperatives from Matrix (Sheet1)
 # ------------------------------------
 def filter_strategic_imperatives(df, role, lifecycle, journey):
     if role not in df.columns or lifecycle not in df.columns or journey not in df.columns:
@@ -244,8 +194,13 @@ Return ONLY a JSON object with exactly the following keys: "description", "cost"
         return {"description": "N/A", "cost": "N/A", "timeframe": "N/A"}
 
 # ------------------------------------
-# Main Steps of the App
+# Build the Main Content of the App
 # ------------------------------------
+
+# (Title is now only in the sidebar; remove from main content.)
+# st.title("Pharma AI Brand Manager")
+
+# Step 1: Criteria Selection
 st.header("Step 1: Select Your Criteria")
 role_selected = st.selectbox("", role_dropdown_options)
 lifecycle_selected = st.selectbox("", lifecycle_dropdown_options)
@@ -321,13 +276,34 @@ else:
     st.info("Please complete all criteria selections in Step 1 to proceed.")
 
 # ------------------------------------
+# Sidebar Navigation Pane
+# ------------------------------------
+with st.sidebar:
+    st.markdown("<h2 class='sidebar-title'>Pharma AI Brand Manager</h2>", unsafe_allow_html=True)
+    st.markdown("""
+    <div class="custom-nav">
+      <ul>
+        <li><a href="#">Find Real Patients</a></li>
+        <li class="active"><a href="#" style="display:block; padding: 10px 0;">Tactical Plans</a></li>
+        <li><a href="#">Strategic Imperatives</a></li>
+        <li><a href="#">Landscape Analysis</a></li>
+        <li><a href="#">Pipeline Outlook</a></li>
+        <li><a href="#">Create Messaging</a></li>
+        <li><a href="#">Creative Campaign Concepts</a></li>
+      </ul>
+    </div>
+    """, unsafe_allow_html=True)
+
+# ------------------------------------
 # Footer
 # ------------------------------------
 footer_html = """
 <div class="custom-footer">
   <a href="#">Terms of Use</a> |
   <a href="#">Privacy Policy</a> |
-  <a href="#">Cookie Settings</a>
+  <a href="#">Cookie Settings</a> |
+  <a href="#">Contact Us</a>
+  <div style="margin-top:5px;">© Philip Storer 2025</div>
 </div>
 """
 st.markdown(footer_html, unsafe_allow_html=True)
