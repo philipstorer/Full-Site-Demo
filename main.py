@@ -6,27 +6,25 @@ import os
 import re
 
 # ------------------------------------
-# Optional: Load Additional CSS from static/style.css
-# ------------------------------------
-def local_css(file_name):
-    with open(file_name) as f:
-        st.markdown(f"<style>{f.read()}</style>", unsafe_allow_html=True)
-
-if os.path.exists("static/style.css"):
-    local_css("static/style.css")
-
-# ------------------------------------
-# Inline CSS for Navigation, Sidebar, and Footer
+# Inline CSS for Sidebar, Navigation, and Footer
 # ------------------------------------
 st.markdown(
     """
     <style>
-    /* Sidebar custom style: light gray background, narrower width */
+    /* Sidebar (Navigation Pane) */
     [data-testid="stSidebar"] {
         background-color: #f0f0f0;
         width: 240px !important;
+        position: relative;
+        padding: 10px;
     }
-    /* Sidebar Navigation Styling */
+    /* Sidebar Title */
+    .sidebar-title {
+        font-size: 1rem;
+        margin: 0;
+        text-align: left;
+    }
+    /* Navigation Links */
     .custom-nav ul {
         list-style: none;
         margin: 0;
@@ -34,26 +32,30 @@ st.markdown(
     }
     .custom-nav li {
         margin: 0;
-        padding: 8px 10px;
+        padding: 5px 0;
     }
     .custom-nav li a {
         text-decoration: none;
         color: inherit;
         display: block;
+        padding: 5px 10px;
     }
-    /* Highlight the Tactical Plans link as active */
-    .custom-nav li.active {
+    .custom-nav li.active a {
         background-color: #d3d3d3;
         border-radius: 4px;
-        padding: 10px 10px;
+        padding: 5px 10px;
+        width: 100%;
+        box-sizing: border-box;
     }
-    /* Sidebar Title Styling */
-    .sidebar-title {
-        font-size: 1.5rem;
-        margin-top: 0;
-        margin-bottom: 20px;
+    /* Sidebar Footer (Bottom Left of Sidebar) */
+    .sidebar-footer {
+        position: absolute;
+        bottom: 10px;
+        left: 10px;
+        font-size: 0.8rem;
+        color: #555;
     }
-    /* Footer style aligned to right */
+    /* Main Page Footer (Full Width) */
     .custom-footer {
         position: fixed;
         left: 0;
@@ -61,8 +63,10 @@ st.markdown(
         width: 100%;
         background-color: #444444;
         color: white;
-        text-align: right;
-        padding: 10px 20px;
+        display: flex;
+        align-items: center;
+        justify-content: flex-end;
+        padding: 4px 20px;
         font-size: 0.9em;
         z-index: 99999;
     }
@@ -73,6 +77,11 @@ st.markdown(
     }
     .custom-footer a:hover {
         color: #ffffff;
+    }
+    /* Reduce vertical spacing for select boxes */
+    .stSelectbox, .stMultiSelect {
+        margin-top: 2px;
+        margin-bottom: 2px;
     }
     </style>
     """,
@@ -92,7 +101,7 @@ else:
     openai.api_key = openai_api_key
 
 # ------------------------------------
-# Load Criteria from Sheet1 (A–M)
+# Load Criteria from Excel (Sheet1)
 # ------------------------------------
 @st.cache_data
 def load_criteria(filename):
@@ -194,14 +203,32 @@ Return ONLY a JSON object with exactly the following keys: "description", "cost"
         return {"description": "N/A", "cost": "N/A", "timeframe": "N/A"}
 
 # ------------------------------------
-# Build the Main Content of the App
+# Sidebar Navigation Pane
 # ------------------------------------
+with st.sidebar:
+    st.markdown("<h2 class='sidebar-title'>Pharma AI Brand Manager</h2>", unsafe_allow_html=True)
+    st.markdown(
+        """
+        <div class="custom-nav">
+          <ul>
+            <li><a href="#">Find Real Patients</a></li>
+            <li class="active"><a href="#" style="display:block; padding: 5px 10px;">Tactical Plans</a></li>
+            <li><a href="#">Strategic Imperatives</a></li>
+            <li><a href="#">Landscape Analysis</a></li>
+            <li><a href="#">Pipeline Outlook</a></li>
+            <li><a href="#">Create Messaging</a></li>
+            <li><a href="#">Creative Campaign Concepts</a></li>
+          </ul>
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
+    st.markdown("<div class='sidebar-footer'>© Philip Storer 2025</div>", unsafe_allow_html=True)
 
-# (Title is now only in the sidebar; remove from main content.)
-# st.title("Pharma AI Brand Manager")
-
-# Step 1: Criteria Selection
-st.header("Step 1: Select Your Criteria")
+# ------------------------------------
+# Main Content Area
+# ------------------------------------
+st.header("Step 1: Customize Your Tactical Plan")
 role_selected = st.selectbox("", role_dropdown_options)
 lifecycle_selected = st.selectbox("", lifecycle_dropdown_options)
 journey_selected = st.selectbox("", journey_dropdown_options)
@@ -276,26 +303,7 @@ else:
     st.info("Please complete all criteria selections in Step 1 to proceed.")
 
 # ------------------------------------
-# Sidebar Navigation Pane
-# ------------------------------------
-with st.sidebar:
-    st.markdown("<h2 class='sidebar-title'>Pharma AI Brand Manager</h2>", unsafe_allow_html=True)
-    st.markdown("""
-    <div class="custom-nav">
-      <ul>
-        <li><a href="#">Find Real Patients</a></li>
-        <li class="active"><a href="#" style="display:block; padding: 10px 0;">Tactical Plans</a></li>
-        <li><a href="#">Strategic Imperatives</a></li>
-        <li><a href="#">Landscape Analysis</a></li>
-        <li><a href="#">Pipeline Outlook</a></li>
-        <li><a href="#">Create Messaging</a></li>
-        <li><a href="#">Creative Campaign Concepts</a></li>
-      </ul>
-    </div>
-    """, unsafe_allow_html=True)
-
-# ------------------------------------
-# Footer
+# Full-Width Footer (Main Page)
 # ------------------------------------
 footer_html = """
 <div class="custom-footer">
@@ -303,7 +311,6 @@ footer_html = """
   <a href="#">Privacy Policy</a> |
   <a href="#">Cookie Settings</a> |
   <a href="#">Contact Us</a>
-  <div style="margin-top:5px;">© Philip Storer 2025</div>
 </div>
 """
 st.markdown(footer_html, unsafe_allow_html=True)
