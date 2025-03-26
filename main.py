@@ -18,18 +18,21 @@ st.markdown(
         position: relative;
         padding: 10px 10px 40px 10px;  /* Extra bottom padding to avoid overlap */
     }
-    /* Sidebar Title: bold and flush to top left */
+    /* Sidebar Title (Logo) */
     .sidebar-title {
-        font-size: 1rem;
-        margin: 0;
+        position: absolute;
+        top: 0;
+        left: 0;
+        margin: 10px;
         padding: 0;
+        font-size: 1rem;
         font-weight: bold;
         text-align: left;
     }
-    /* Navigation Styling: less vertical spacing and aligned left */
+    /* Navigation Styling */
     .custom-nav ul {
         list-style: none;
-        margin: 0;
+        margin: 60px 0 0 0; /* Leave space for logo at the top */
         padding: 0;
     }
     .custom-nav li {
@@ -51,7 +54,7 @@ st.markdown(
         width: 100%;
         box-sizing: border-box;
     }
-    /* Full-width Footer (across entire page) */
+    /* Main page footer (full width) */
     .custom-footer {
         position: fixed;
         left: 0;
@@ -60,23 +63,21 @@ st.markdown(
         background-color: #444444;
         color: white;
         display: flex;
+        justify-content: flex-end;
         align-items: center;
-        justify-content: space-between;
         padding: 8px 20px;
         font-size: 0.9em;
         z-index: 99999;
     }
-    .custom-footer .left {
-        text-align: left;
-    }
-    .custom-footer .right a {
+    .custom-footer a {
         color: #dddddd;
-        margin-left: 10px;
+        margin: 0 10px;
         text-decoration: none;
     }
-    .custom-footer .right a:hover {
+    .custom-footer a:hover {
         color: #ffffff;
     }
+    /* Sidebar footer removed (copyright now in main footer on left) */
     /* Reduce vertical spacing for select boxes */
     .stSelectbox, .stMultiSelect {
         margin-top: 2px;
@@ -109,10 +110,11 @@ def load_criteria(filename):
         if df.shape[1] < 13:
             st.error(f"Excel file has only {df.shape[1]} columns but at least 13 are required. Check file formatting.")
             return None, None, None, None
-        role_options = df.columns[1:4].tolist()  # Columns B-D
+        # Extract options:
+        role_options = df.columns[1:4].tolist()  # Columns B–D
         role_options = [opt for opt in role_options if opt.lower() != "caregiver"]
-        lifecycle_options = df.columns[5:9].tolist()  # Columns F-I
-        journey_options = df.columns[9:13].tolist()   # Columns J-M
+        lifecycle_options = df.columns[5:9].tolist()  # Columns F–I
+        journey_options = df.columns[9:13].tolist()   # Columns J–M
         matrix_df = df.copy()
         return role_options, lifecycle_options, journey_options, matrix_df
     except Exception as e:
@@ -223,12 +225,12 @@ with st.sidebar:
     )
 
 # ------------------------------------
-# Full-Width Footer (Main Page)
+# Full-Width Footer (Main Page) with Left-Aligned Copyright
 # ------------------------------------
 footer_html = """
 <footer class="custom-footer">
-  <div class="left">© Philip Storer 2025</div>
-  <div class="right">
+  <div style="text-align: left; flex: 1;">© Philip Storer 2025</div>
+  <div>
     <a href="#">Terms of Use</a> |
     <a href="#">Privacy Policy</a> |
     <a href="#">Cookie Settings</a> |
