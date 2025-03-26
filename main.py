@@ -6,52 +6,159 @@ import os
 import re
 
 # -----------------------
-# Navigation Pane on the Left
-# -----------------------
-with st.sidebar:
-    # Create a container with light gray background.
-    st.markdown(
-        """
-        <div style="background-color: #f0f0f0; padding: 15px; border-radius: 5px;">
-            <h3 style="margin-bottom: 10px;">Navigation</h3>
-            <ul style="list-style-type: none; padding-left: 0;">
-                <li><a href="#" style="text-decoration: none; color: inherit;">Find Real Patients</a></li>
-                <li><a href="#" style="text-decoration: none; color: inherit;">Tactical Plans</a></li>
-                <li><a href="#" style="text-decoration: none; color: inherit;">Strategic Imperatives</a></li>
-                <li><a href="#" style="text-decoration: none; color: inherit;">Landscape Analysis</a></li>
-                <li><a href="#" style="text-decoration: none; color: inherit;">Pipeline Outlook</a></li>
-                <li><a href="#" style="text-decoration: none; color: inherit;">Create Messaging</a></li>
-                <li><a href="#" style="text-decoration: none; color: inherit;">Creative Campaign Concepts</a></li>
-            </ul>
-        </div>
-        """, unsafe_allow_html=True
-    )
-
-# -----------------------
-# Load Custom CSS for Additional Styling (Optional)
+# Custom CSS Injection
 # -----------------------
 def local_css(file_name):
     with open(file_name) as f:
         st.markdown(f"<style>{f.read()}</style>", unsafe_allow_html=True)
 
+# Inject CSS for sidebar, overlay, and footer.
+st.markdown(
+    """
+    <style>
+    /* Sidebar custom style: light gray background, narrower width */
+    [data-testid="stSidebar"] {
+        background-color: #f0f0f0;
+        width: 240px;  /* Adjust width as needed */
+    }
+    /* Footer style */
+    .custom-footer {
+        position: fixed;
+        left: 0;
+        bottom: 0;
+        width: 100%;
+        background-color: #444444;
+        color: white;
+        text-align: center;
+        padding: 10px 0;
+        font-size: 0.9em;
+    }
+    .custom-footer a {
+        color: #dddddd;
+        margin: 0 10px;
+        text-decoration: none;
+    }
+    .custom-footer a:hover {
+        color: #ffffff;
+    }
+    /* Login overlay */
+    .login-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(255, 255, 255, 0.95);
+        z-index: 1000;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    .login-box {
+        background-color: #ffffff;
+        padding: 40px;
+        border-radius: 8px;
+        box-shadow: 0px 0px 10px rgba(0,0,0,0.1);
+        width: 300px;
+        text-align: center;
+    }
+    .login-box h2 {
+        margin-bottom: 20px;
+    }
+    .login-box input[type="text"], .login-box input[type="password"] {
+        width: 100%;
+        padding: 10px;
+        margin: 10px 0;
+        border: 1px solid #ccc;
+        border-radius: 4px;
+    }
+    .login-box button {
+        width: 100%;
+        padding: 10px;
+        background-color: #3498db;
+        color: white;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        margin-bottom: 10px;
+    }
+    .login-box button:hover {
+        background-color: #2980b9;
+    }
+    </style>
+    """, unsafe_allow_html=True
+)
+
+# Optionally load external CSS file if you have additional styling.
 if os.path.exists("static/style.css"):
     local_css("static/style.css")
 
 # -----------------------
-# Secure API Key Handling
+# Login Overlay Logic
 # -----------------------
-if "openai" in st.secrets and "api_key" in st.secrets["openai"]:
-    openai.api_key = st.secrets["openai"]["api_key"]
-else:
-    openai_api_key = os.getenv("OPENAI_API_KEY")
-    if not openai_api_key:
-        st.error("OpenAI API key not found. Please set it in .streamlit/secrets.toml or as an environment variable.")
-        st.stop()
-    openai.api_key = openai_api_key
+if 'logged_in' not in st.session_state:
+    st.session_state.logged_in = False
+
+def show_login():
+    # Create a container that covers the page
+    login_html = """
+    <div class="login-overlay">
+      <div class="login-box">
+        <h2>Login</h2>
+        <form id="login-form">
+          <input type="text" id="username" placeholder="Username" required /><br>
+          <input type="password" id="password" placeholder="Password" required /><br>
+          <button type="submit">Login</button>
+        </form>
+        <p>or</p>
+        <button onclick="window.parent.postMessage('microsoft-login','*')">Sign in with Microsoft</button>
+      </div>
+    </div>
+    <script>
+      const form = document.getElementById('login-form');
+      form.addEventListener('submit', function(e) {
+          e.preventDefault();
+          window.parent.postMessage('login-success','*');
+      });
+    </script>
+    """
+    st.markdown(login_html, unsafe_allow_html=True)
+
+# Listen for messages from the frontend (this simulation uses st.experimental_set_query_params)
+# (In Streamlit Cloud, you can simulate this by clicking a button.)
+if not st.session_state.logged_in:
+    show_login()
+    # Create a placeholder button to simulate login (this is visible only in dev mode)
+    if st.button("Simulate Login"):
+        st.session_state.logged_in = True
+        st.experimental_rerun()
+
+if not st.session_state.logged_in:
+    st.stop()  # Block the rest of the app if not logged in
 
 # -----------------------
-# Load Criteria from Sheet1 (A–M)
+# Navigation Pane (Sidebar)
 # -----------------------
+with st.sidebar:
+    # Place the title in the sidebar
+    st.markdown("<h2>Pharma AI Brand Manager</h2>", unsafe_allow_html=True)
+    # Navigation links (placeholders)
+    st.markdown("""
+    <ul style="list-style-type: none; padding-left: 0; margin: 0;">
+      <li><a href="#" style="text-decoration: none; color: inherit;">Find Real Patients</a></li>
+      <li><a href="#" style="text-decoration: none; color: inherit;">Tactical Plans</a></li>
+      <li><a href="#" style="text-decoration: none; color: inherit;">Strategic Imperatives</a></li>
+      <li><a href="#" style="text-decoration: none; color: inherit;">Landscape Analysis</a></li>
+      <li><a href="#" style="text-decoration: none; color: inherit;">Pipeline Outlook</a></li>
+      <li><a href="#" style="text-decoration: none; color: inherit;">Create Messaging</a></li>
+      <li><a href="#" style="text-decoration: none; color: inherit;">Creative Campaign Concepts</a></li>
+    </ul>
+    """, unsafe_allow_html=True)
+
+# -----------------------
+# Main App Content (Login has already occurred, so hide the title here)
+# -----------------------
+# Load Criteria from Sheet1 (A–M)
 @st.cache_data
 def load_criteria(filename):
     try:
@@ -59,7 +166,6 @@ def load_criteria(filename):
         if df.shape[1] < 13:
             st.error(f"Excel file has only {df.shape[1]} columns but at least 13 are required. Check file formatting.")
             return None, None, None, None
-        # Extract options:
         role_options = df.columns[1:4].tolist()  # B–D
         role_options = [opt for opt in role_options if opt.lower() != "caregiver"]
         lifecycle_options = df.columns[5:9].tolist()  # F–I
@@ -74,9 +180,7 @@ role_options, lifecycle_options, journey_options, matrix_df = load_criteria("tes
 if any(v is None for v in [role_options, lifecycle_options, journey_options, matrix_df]):
     st.stop()
 
-# -----------------------
-# Define Placeholders and Disease State Options
-# -----------------------
+# Define placeholders and disease state options.
 role_placeholder = "Audience"
 lifecycle_placeholder = "Product Life Cycle"
 journey_placeholder = "Customer Journey Focus"
@@ -86,7 +190,6 @@ role_dropdown_options = [role_placeholder] + role_options
 lifecycle_dropdown_options = [lifecycle_placeholder] + lifecycle_options
 journey_dropdown_options = [journey_placeholder] + journey_options
 
-# Sample disease states; update with a comprehensive list as needed.
 disease_states = [
     "Diabetes", "Hypertension", "Asthma", "Depression", "Arthritis",
     "Alzheimer's", "COPD", "Obesity", "Cancer", "Stroke"
@@ -94,7 +197,7 @@ disease_states = [
 disease_dropdown_options = [disease_placeholder] + disease_states
 
 # -----------------------
-# Helper: Filter Strategic Imperatives from Matrix (Sheet1)
+# Helper: Filter Strategic Imperatives (Sheet1)
 # -----------------------
 def filter_strategic_imperatives(df, role, lifecycle, journey):
     if role not in df.columns or lifecycle not in df.columns or journey not in df.columns:
@@ -112,53 +215,8 @@ def filter_strategic_imperatives(df, role, lifecycle, journey):
         return []
 
 # -----------------------
-# Helper: Generate Tactical Recommendation via OpenAI API
+# Main Criteria Selection (Step 1)
 # -----------------------
-def generate_ai_output(tactic_text, selected_differentiators):
-    differentiators_text = ", ".join(selected_differentiators) if selected_differentiators else "None"
-    prompt = f"""
-You are an expert pharmaceutical marketing strategist.
-Given the following tactic: "{tactic_text}"
-and considering the selected product differentiators: "{differentiators_text}",
-explain in 2-3 sentences how implementing this tactic will deliver on the strategic imperative,
-detailing how its unique aspects align with and leverage these differentiators.
-Also, provide an estimated cost range in USD and an estimated timeframe in months for implementation.
-Return ONLY a JSON object with exactly the following keys: "description", "cost", "timeframe". Do not include any additional text.
-    """
-    try:
-        with st.spinner("Generating tactical recommendation..."):
-            response = openai.ChatCompletion.create(
-                model="gpt-3.5-turbo",
-                messages=[
-                    {"role": "system", "content": "You are an expert pharmaceutical marketing strategist."},
-                    {"role": "user", "content": prompt}
-                ],
-                temperature=0.7,
-            )
-        content = response.choices[0].message.content.strip()
-        match = re.search(r'\{.*\}', content, re.DOTALL)
-        if match:
-            json_str = match.group(0)
-        else:
-            st.error("No valid JSON object found in the response.")
-            return {"description": "N/A", "cost": "N/A", "timeframe": "N/A"}
-        try:
-            output = json.loads(json_str)
-        except json.JSONDecodeError:
-            st.error("Error decoding the JSON object. Please try again.")
-            output = {"description": "N/A", "cost": "N/A", "timeframe": "N/A"}
-        return output
-    except Exception as e:
-        st.error(f"Error generating tactical recommendation: {e}")
-        return {"description": "N/A", "cost": "N/A", "timeframe": "N/A"}
-
-# -----------------------
-# Build the Main Interface
-# -----------------------
-
-st.title("Pharma AI Brand Manager")
-
-# Step 1: Criteria Selection
 st.header("Step 1: Select Your Criteria")
 role_selected = st.selectbox("", role_dropdown_options)
 lifecycle_selected = st.selectbox("", lifecycle_dropdown_options)
@@ -167,8 +225,7 @@ disease_selected = st.selectbox("", disease_dropdown_options)
 
 if (role_selected != role_placeholder and lifecycle_selected != lifecycle_placeholder and
     journey_selected != journey_placeholder and disease_selected != disease_placeholder):
-    
-    # Step 2: Strategic Imperatives
+
     st.header("Step 2: Select Strategic Imperatives")
     strategic_options = filter_strategic_imperatives(matrix_df, role_selected, lifecycle_selected, journey_selected)
     if not strategic_options:
@@ -177,7 +234,6 @@ if (role_selected != role_placeholder and lifecycle_selected != lifecycle_placeh
         selected_strategics = st.multiselect("Select up to 3 Strategic Imperatives", options=strategic_options, max_selections=3)
     
     if selected_strategics and len(selected_strategics) > 0:
-        # Step 3: Product Differentiators
         st.header("Step 3: Select Product Differentiators")
         try:
             sheet2 = pd.read_excel("test.xlsx", sheet_name=1, header=0)
@@ -191,7 +247,6 @@ if (role_selected != role_placeholder and lifecycle_selected != lifecycle_placeh
         selected_differentiators = st.multiselect("Select up to 3 Product Differentiators", options=product_diff_options, max_selections=3)
         
         if selected_differentiators and len(selected_differentiators) > 0:
-            # Additional CTA Buttons (placeholders)
             st.markdown("### Additional Actions")
             col1, col2, col3, col4 = st.columns(4)
             with col1:
@@ -202,8 +257,7 @@ if (role_selected != role_placeholder and lifecycle_selected != lifecycle_placeh
                 st.button("Generate Campaign", key="gen_campaign")
             with col4:
                 st.button("Create Messaging", key="create_messaging")
-            with st.container():
-                st.button("Creative Campaign Concepts", key="creative_campaign")
+            st.button("Creative Campaign Concepts", key="creative_campaign")
             
             if gen_plan_pressed:
                 st.header("Tactical Recommendations")
@@ -236,3 +290,15 @@ if (role_selected != role_placeholder and lifecycle_selected != lifecycle_placeh
         st.info("Please select at least one strategic imperative to proceed.")
 else:
     st.info("Please complete all criteria selections in Step 1 to proceed.")
+
+# -----------------------
+# Footer Area
+# -----------------------
+footer_html = """
+<div class="custom-footer">
+  <a href="#">Terms of Use</a> |
+  <a href="#">Privacy Policy</a> |
+  <a href="#">Cookie Settings</a>
+</div>
+"""
+st.markdown(footer_html, unsafe_allow_html=True)
