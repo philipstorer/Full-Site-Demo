@@ -11,13 +11,14 @@ import re
 st.markdown(
     """
     <style>
-    /* Sidebar style: light gray background, fixed width */
+    /* Sidebar style */
     [data-testid="stSidebar"] {
         background-color: #f0f0f0;
         width: 240px !important;
         padding: 10px;
+        position: relative;
     }
-    /* Navigation styling */
+    /* Sidebar Navigation */
     .custom-nav ul {
         list-style: none;
         margin: 0;
@@ -32,12 +33,12 @@ st.markdown(
         text-decoration: none;
         color: inherit;
         display: block;
-        padding: 2px 5px;
+        padding: 2px 10px;
     }
     .custom-nav li.active a {
         background-color: #d3d3d3;
         border-radius: 4px;
-        padding: 2px 5px;
+        padding: 2px 10px;
         width: 100%;
         box-sizing: border-box;
     }
@@ -98,7 +99,6 @@ def load_criteria(filename):
             return None, None, None, None
         # Extract options:
         role_options = df.columns[1:4].tolist()  # Columns B–D
-        # Remove "Caregiver" (case-insensitive)
         role_options = [opt for opt in role_options if opt.lower() != "caregiver"]
         lifecycle_options = df.columns[5:9].tolist()  # Columns F–I
         journey_options = df.columns[9:13].tolist()   # Columns J–M
@@ -193,13 +193,13 @@ Return ONLY a JSON object with exactly the following keys: "description", "cost"
 # Sidebar Navigation Pane
 # ------------------------------------
 with st.sidebar:
-    # Remove any title from the sidebar; navigation only.
+    st.markdown("<div class='sidebar-title'><strong>Pharma AI Brand Manager</strong></div>", unsafe_allow_html=True)
     st.markdown(
         """
         <div class="custom-nav">
           <ul>
             <li><a href="#">Find Real Patients</a></li>
-            <li class="active"><a href="#" style="display:block; padding: 2px 5px;">Tactical Plans</a></li>
+            <li class="active"><a href="#" style="display:block; padding: 2px 10px;">Tactical Plans</a></li>
             <li><a href="#">Strategic Imperatives</a></li>
             <li><a href="#">Landscape Analysis</a></li>
             <li><a href="#">Pipeline Outlook</a></li>
@@ -212,7 +212,7 @@ with st.sidebar:
     )
 
 # ------------------------------------
-# Full-Width Footer (Main Page) with Left-Aligned Copyright in Footer
+# Full-Width Footer (Main Page)
 # ------------------------------------
 footer_html = """
 <footer class="custom-footer">
@@ -230,6 +230,7 @@ st.markdown(footer_html, unsafe_allow_html=True)
 # ------------------------------------
 # Main Content Area
 # ------------------------------------
+st.header("Pharma AI Brand Manager")
 st.header("Step 1: Customize Your Tactical Plan")
 role_selected = st.selectbox("", role_dropdown_options)
 lifecycle_selected = st.selectbox("", lifecycle_dropdown_options)
@@ -244,7 +245,22 @@ if (role_selected != role_placeholder and lifecycle_selected != lifecycle_placeh
     if not strategic_options:
         st.warning("No strategic imperatives found for these selections. Please try different options.")
     else:
-        selected_strategics = st.multiselect("Select up to 3 Strategic Imperatives", options=strategic_options, max_selections=3)
+        # Use session state to manage strategic selection widget
+        if "strategic_multiselect" not in st.session_state:
+            st.session_state["strategic_multiselect"] = []
+        current_selection = st.session_state["strategic_multiselect"]
+        if len(current_selection) < 3:
+            new_selection = st.multiselect("Select up to 3 Strategic Imperatives", options=strategic_options, max_selections=3, key="strategic_multiselect")
+            st.session_state["strategic_multiselect"] = new_selection
+            selected_strategics = new_selection
+        else:
+            st.write("Maximum options selected:")
+            st.write(", ".join(st.session_state["strategic_multiselect"]))
+            if st.button("Edit Selection"):
+                st.session_state["strategic_multiselect"] = []
+                selected_strategics = []
+            else:
+                selected_strategics = st.session_state["strategic_multiselect"]
     
     if selected_strategics and len(selected_strategics) > 0:
         st.header("Step 3: Select Product Differentiators")
