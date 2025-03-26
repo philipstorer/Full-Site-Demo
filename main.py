@@ -6,21 +6,22 @@ import os
 import re
 
 # -----------------------
-# Custom CSS Injection
+# Optional: Load Additional CSS
 # -----------------------
 def local_css(file_name):
     with open(file_name) as f:
         st.markdown(f"<style>{f.read()}</style>", unsafe_allow_html=True)
 
-# Inject CSS for sidebar, overlay, and footer.
+# Inject inline CSS for overlay, sidebar, and footer
 st.markdown(
     """
     <style>
     /* Sidebar custom style: light gray background, narrower width */
     [data-testid="stSidebar"] {
         background-color: #f0f0f0;
-        width: 240px;  /* Adjust width as needed */
+        width: 240px !important; /* Adjust width as needed */
     }
+
     /* Footer style */
     .custom-footer {
         position: fixed;
@@ -32,6 +33,7 @@ st.markdown(
         text-align: center;
         padding: 10px 0;
         font-size: 0.9em;
+        z-index: 99999;
     }
     .custom-footer a {
         color: #dddddd;
@@ -41,15 +43,14 @@ st.markdown(
     .custom-footer a:hover {
         color: #ffffff;
     }
-    /* Login overlay */
+
+    /* Login overlay with partial transparency */
     .login-overlay {
         position: fixed;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        background-color: rgba(255, 255, 255, 0.95);
-        z-index: 1000;
+        top: 0; left: 0;
+        width: 100%; height: 100%;
+        background-color: rgba(0, 0, 0, 0.5);
+        z-index: 9999;
         display: flex;
         align-items: center;
         justify-content: center;
@@ -58,91 +59,141 @@ st.markdown(
         background-color: #ffffff;
         padding: 40px;
         border-radius: 8px;
-        box-shadow: 0px 0px 10px rgba(0,0,0,0.1);
-        width: 300px;
-        text-align: center;
+        box-shadow: 0 0 10px rgba(0,0,0,0.2);
+        width: 400px;
+        text-align: left;
+    }
+    .login-box img {
+        width: 150px;
+        margin-bottom: 20px;
     }
     .login-box h2 {
         margin-bottom: 20px;
     }
-    .login-box input[type="text"], .login-box input[type="password"] {
+    .login-box label {
+        display: block;
+        margin-bottom: 5px;
+    }
+    .login-box input[type="text"] {
         width: 100%;
-        padding: 10px;
-        margin: 10px 0;
+        padding: 8px;
+        margin-bottom: 8px;
         border: 1px solid #ccc;
         border-radius: 4px;
     }
+    .login-box .login-buttons {
+        display: flex;
+        justify-content: flex-end;
+        margin-top: 10px;
+    }
     .login-box button {
-        width: 100%;
-        padding: 10px;
-        background-color: #3498db;
-        color: white;
+        background-color: #0078d4;
+        color: #fff;
         border: none;
         border-radius: 4px;
+        padding: 8px 16px;
         cursor: pointer;
-        margin-bottom: 10px;
+        margin-left: 8px;
     }
     .login-box button:hover {
-        background-color: #2980b9;
+        background-color: #005ea2;
+    }
+    .login-box p {
+        margin: 5px 0;
+        font-size: 0.9em;
+    }
+    .login-box a {
+        color: #0067c0;
+        text-decoration: none;
     }
     </style>
-    """, unsafe_allow_html=True
+    """,
+    unsafe_allow_html=True
 )
 
-# Optionally load external CSS file if you have additional styling.
+# If you have a local style.css, load it here
 if os.path.exists("static/style.css"):
     local_css("static/style.css")
 
 # -----------------------
-# Login Overlay Logic
+# Secure API Key Handling
 # -----------------------
-if 'logged_in' not in st.session_state:
+if "openai" in st.secrets and "api_key" in st.secrets["openai"]:
+    openai.api_key = st.secrets["openai"]["api_key"]
+else:
+    openai_api_key = os.getenv("OPENAI_API_KEY")
+    if not openai_api_key:
+        st.error("OpenAI API key not found. Please set it in .streamlit/secrets.toml or as an environment variable.")
+        st.stop()
+    openai.api_key = openai_api_key
+
+# -----------------------
+# Manage Login State
+# -----------------------
+if "logged_in" not in st.session_state:
     st.session_state.logged_in = False
 
-def show_login():
-    # Create a container that covers the page
-    login_html = """
-    <div class="login-overlay">
-      <div class="login-box">
-        <h2>Login</h2>
-        <form id="login-form">
-          <input type="text" id="username" placeholder="Username" required /><br>
-          <input type="password" id="password" placeholder="Password" required /><br>
-          <button type="submit">Login</button>
-        </form>
-        <p>or</p>
-        <button onclick="window.parent.postMessage('microsoft-login','*')">Sign in with Microsoft</button>
-      </div>
-    </div>
-    <script>
-      const form = document.getElementById('login-form');
-      form.addEventListener('submit', function(e) {
-          e.preventDefault();
-          window.parent.postMessage('login-success','*');
-      });
-    </script>
+def show_login_overlay():
     """
-    st.markdown(login_html, unsafe_allow_html=True)
+    Renders a transparent overlay that mimics a Microsoft sign-in screen.
+    Returns True if the user pressed a button to log in; otherwise False.
+    """
+    st.markdown(
+        """
+        <div class="login-overlay">
+          <div class="login-box">
+            <img src="https://upload.wikimedia.org/wikipedia/commons/4/44/Microsoft_logo.svg" alt="Microsoft Logo" />
+            <h2>Sign in</h2>
+            <label>Email, phone, or Skype</label>
+        """,
+        unsafe_allow_html=True
+    )
 
-# Listen for messages from the frontend (this simulation uses st.experimental_set_query_params)
-# (In Streamlit Cloud, you can simulate this by clicking a button.)
+    # Use a single form with multiple buttons
+    with st.form("login_form", clear_on_submit=True):
+        user_input = st.text_input("", key="user_input_overlay")
+        st.markdown(
+            """
+            <p><a href="#">No account? Create one!</a></p>
+            <p><a href="#">Can't access your account?</a></p>
+            <div class="login-buttons">
+            """,
+            unsafe_allow_html=True
+        )
+        colA, colB = st.columns(2)
+        with colA:
+            back_btn = st.form_submit_button("Back")
+        with colB:
+            next_btn = st.form_submit_button("Next")
+        st.markdown("</div>", unsafe_allow_html=True)
+
+    st.markdown('<p style="text-align:center; margin-top:10px;">or</p>', unsafe_allow_html=True)
+    with st.form("ms_form", clear_on_submit=True):
+        ms_btn = st.form_submit_button("Sign in with Microsoft")
+
+    st.markdown("</div></div>", unsafe_allow_html=True)
+
+    # If user clicked Next or Sign in with Microsoft, we return True to log in
+    if next_btn or ms_btn:
+        return True
+    # "Back" does nothing here (still returns False)
+    return False
+
 if not st.session_state.logged_in:
-    show_login()
-    # Create a placeholder button to simulate login (this is visible only in dev mode)
-    if st.button("Simulate Login"):
+    # Show the overlay
+    user_clicked = show_login_overlay()
+    if user_clicked:
         st.session_state.logged_in = True
         st.experimental_rerun()
-
-if not st.session_state.logged_in:
-    st.stop()  # Block the rest of the app if not logged in
+    # Stop rendering the rest of the page if not logged in
+    st.stop()
 
 # -----------------------
-# Navigation Pane (Sidebar)
+# Sidebar Navigation Pane
 # -----------------------
 with st.sidebar:
-    # Place the title in the sidebar
-    st.markdown("<h2>Pharma AI Brand Manager</h2>", unsafe_allow_html=True)
-    # Navigation links (placeholders)
+    st.markdown("<h2 style='margin-top:0;'>Pharma AI Brand Manager</h2>", unsafe_allow_html=True)
+    # Navigation links
     st.markdown("""
     <ul style="list-style-type: none; padding-left: 0; margin: 0;">
       <li><a href="#" style="text-decoration: none; color: inherit;">Find Real Patients</a></li>
@@ -156,9 +207,8 @@ with st.sidebar:
     """, unsafe_allow_html=True)
 
 # -----------------------
-# Main App Content (Login has already occurred, so hide the title here)
+# Load Data from Excel (Sheet1)
 # -----------------------
-# Load Criteria from Sheet1 (A–M)
 @st.cache_data
 def load_criteria(filename):
     try:
@@ -180,7 +230,7 @@ role_options, lifecycle_options, journey_options, matrix_df = load_criteria("tes
 if any(v is None for v in [role_options, lifecycle_options, journey_options, matrix_df]):
     st.stop()
 
-# Define placeholders and disease state options.
+# Placeholder & Disease State
 role_placeholder = "Audience"
 lifecycle_placeholder = "Product Life Cycle"
 journey_placeholder = "Customer Journey Focus"
@@ -190,6 +240,7 @@ role_dropdown_options = [role_placeholder] + role_options
 lifecycle_dropdown_options = [lifecycle_placeholder] + lifecycle_options
 journey_dropdown_options = [journey_placeholder] + journey_options
 
+# Sample disease states
 disease_states = [
     "Diabetes", "Hypertension", "Asthma", "Depression", "Arthritis",
     "Alzheimer's", "COPD", "Obesity", "Cancer", "Stroke"
@@ -197,7 +248,7 @@ disease_states = [
 disease_dropdown_options = [disease_placeholder] + disease_states
 
 # -----------------------
-# Helper: Filter Strategic Imperatives (Sheet1)
+# Filter Strategic Imperatives
 # -----------------------
 def filter_strategic_imperatives(df, role, lifecycle, journey):
     if role not in df.columns or lifecycle not in df.columns or journey not in df.columns:
@@ -215,7 +266,48 @@ def filter_strategic_imperatives(df, role, lifecycle, journey):
         return []
 
 # -----------------------
-# Main Criteria Selection (Step 1)
+# OpenAI Call for Tactics
+# -----------------------
+def generate_ai_output(tactic_text, selected_differentiators):
+    differentiators_text = ", ".join(selected_differentiators) if selected_differentiators else "None"
+    prompt = f"""
+You are an expert pharmaceutical marketing strategist.
+Given the following tactic: "{tactic_text}"
+and considering the selected product differentiators: "{differentiators_text}",
+explain in 2-3 sentences how implementing this tactic will deliver on the strategic imperative,
+detailing how its unique aspects align with and leverage these differentiators.
+Also, provide an estimated cost range in USD and an estimated timeframe in months for implementation.
+Return ONLY a JSON object with exactly the following keys: "description", "cost", "timeframe". Do not include any additional text.
+    """
+    try:
+        with st.spinner("Generating tactical recommendation..."):
+            response = openai.ChatCompletion.create(
+                model="gpt-3.5-turbo",
+                messages=[
+                    {"role": "system", "content": "You are an expert pharmaceutical marketing strategist."},
+                    {"role": "user", "content": prompt}
+                ],
+                temperature=0.7,
+            )
+        content = response.choices[0].message.content.strip()
+        match = re.search(r'\{.*\}', content, re.DOTALL)
+        if match:
+            json_str = match.group(0)
+        else:
+            st.error("No valid JSON object found in the response.")
+            return {"description": "N/A", "cost": "N/A", "timeframe": "N/A"}
+        try:
+            output = json.loads(json_str)
+        except json.JSONDecodeError:
+            st.error("Error decoding the JSON object. Please try again.")
+            output = {"description": "N/A", "cost": "N/A", "timeframe": "N/A"}
+        return output
+    except Exception as e:
+        st.error(f"Error generating tactical recommendation: {e}")
+        return {"description": "N/A", "cost": "N/A", "timeframe": "N/A"}
+
+# -----------------------
+# Main Steps
 # -----------------------
 st.header("Step 1: Select Your Criteria")
 role_selected = st.selectbox("", role_dropdown_options)
@@ -292,7 +384,7 @@ else:
     st.info("Please complete all criteria selections in Step 1 to proceed.")
 
 # -----------------------
-# Footer Area
+# Footer
 # -----------------------
 footer_html = """
 <div class="custom-footer">
