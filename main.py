@@ -193,7 +193,7 @@ Return ONLY a JSON object with exactly the following keys: "description", "cost"
 # Sidebar Navigation Pane
 # ------------------------------------
 with st.sidebar:
-    st.markdown("<div class='sidebar-title'><strong>Pharma AI Brand Manager</strong></div>", unsafe_allow_html=True)
+    # The navigation pane now contains only links.
     st.markdown(
         """
         <div class="custom-nav">
@@ -241,26 +241,12 @@ if (role_selected != role_placeholder and lifecycle_selected != lifecycle_placeh
     journey_selected != journey_placeholder and disease_selected != disease_placeholder):
 
     st.header("Step 2: Select Strategic Imperatives")
-    strategic_options = filter_strategic_imperatives(matrix_df, role_selected, lifecycle_selected, journey_selected)
-    if not strategic_options:
-        st.warning("No strategic imperatives found for these selections. Please try different options.")
-    else:
-        # Use session state to manage strategic selection widget
-        if "strategic_multiselect" not in st.session_state:
+    selected_strategics = st.multiselect("Select up to 3 Strategic Imperatives", options=filter_strategic_imperatives(matrix_df, role_selected, lifecycle_selected, journey_selected), max_selections=3, key="strategic_multiselect")
+    if len(selected_strategics) == 3:
+        st.write("Selected options: " + ", ".join(selected_strategics))
+        if st.button("Edit Selection", key="edit_strategic"):
             st.session_state["strategic_multiselect"] = []
-        current_selection = st.session_state["strategic_multiselect"]
-        if len(current_selection) < 3:
-            new_selection = st.multiselect("Select up to 3 Strategic Imperatives", options=strategic_options, max_selections=3, key="strategic_multiselect")
-            st.session_state["strategic_multiselect"] = new_selection
-            selected_strategics = new_selection
-        else:
-            st.write("Maximum options selected:")
-            st.write(", ".join(st.session_state["strategic_multiselect"]))
-            if st.button("Edit Selection"):
-                st.session_state["strategic_multiselect"] = []
-                selected_strategics = []
-            else:
-                selected_strategics = st.session_state["strategic_multiselect"]
+            st.experimental_rerun()
     
     if selected_strategics and len(selected_strategics) > 0:
         st.header("Step 3: Select Product Differentiators")
@@ -292,10 +278,7 @@ if (role_selected != role_placeholder and lifecycle_selected != lifecycle_placeh
                     if row.empty:
                         st.info(f"No tactic found for strategic imperative: {imperative}")
                         continue
-                    if role_selected == "HCP":
-                        tactic = row["HCP Engagement"].iloc[0]
-                    else:
-                        tactic = row["Patient & Caregiver"].iloc[0]
+                    tactic = row["HCP Engagement"].iloc[0] if role_selected == "HCP" else row["Patient & Caregiver"].iloc[0]
                     ai_output = generate_ai_output(tactic, selected_differentiators)
                     st.subheader(f"{imperative}: {tactic}")
                     st.write(ai_output.get("description", "No description available."))
