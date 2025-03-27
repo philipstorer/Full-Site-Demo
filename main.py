@@ -11,14 +11,13 @@ import re
 st.markdown(
     """
     <style>
-    /* Sidebar style */
+    /* Sidebar style: light gray background, fixed width */
     [data-testid="stSidebar"] {
         background-color: #f0f0f0;
         width: 240px !important;
         padding: 10px;
-        position: relative;
     }
-    /* Sidebar Navigation */
+    /* Navigation styling */
     .custom-nav ul {
         list-style: none;
         margin: 0;
@@ -33,12 +32,12 @@ st.markdown(
         text-decoration: none;
         color: inherit;
         display: block;
-        padding: 2px 10px;
+        padding: 2px 5px;
     }
     .custom-nav li.active a {
         background-color: #d3d3d3;
         border-radius: 4px;
-        padding: 2px 10px;
+        padding: 2px 5px;
         width: 100%;
         box-sizing: border-box;
     }
@@ -99,6 +98,7 @@ def load_criteria(filename):
             return None, None, None, None
         # Extract options:
         role_options = df.columns[1:4].tolist()  # Columns B–D
+        # Remove "Caregiver" (case-insensitive)
         role_options = [opt for opt in role_options if opt.lower() != "caregiver"]
         lifecycle_options = df.columns[5:9].tolist()  # Columns F–I
         journey_options = df.columns[9:13].tolist()   # Columns J–M
@@ -193,13 +193,13 @@ Return ONLY a JSON object with exactly the following keys: "description", "cost"
 # Sidebar Navigation Pane
 # ------------------------------------
 with st.sidebar:
-    # The navigation pane now contains only links.
+    # Remove any title from the sidebar; navigation only.
     st.markdown(
         """
         <div class="custom-nav">
           <ul>
             <li><a href="#">Find Real Patients</a></li>
-            <li class="active"><a href="#" style="display:block; padding: 2px 10px;">Tactical Plans</a></li>
+            <li class="active"><a href="#" style="display:block; padding: 2px 5px;">Tactical Plans</a></li>
             <li><a href="#">Strategic Imperatives</a></li>
             <li><a href="#">Landscape Analysis</a></li>
             <li><a href="#">Pipeline Outlook</a></li>
@@ -212,7 +212,7 @@ with st.sidebar:
     )
 
 # ------------------------------------
-# Full-Width Footer (Main Page)
+# Full-Width Footer (Main Page) with Left-Aligned Copyright in Footer
 # ------------------------------------
 footer_html = """
 <footer class="custom-footer">
@@ -230,7 +230,6 @@ st.markdown(footer_html, unsafe_allow_html=True)
 # ------------------------------------
 # Main Content Area
 # ------------------------------------
-st.header("Pharma AI Brand Manager")
 st.header("Step 1: Customize Your Tactical Plan")
 role_selected = st.selectbox("", role_dropdown_options)
 lifecycle_selected = st.selectbox("", lifecycle_dropdown_options)
@@ -241,12 +240,11 @@ if (role_selected != role_placeholder and lifecycle_selected != lifecycle_placeh
     journey_selected != journey_placeholder and disease_selected != disease_placeholder):
 
     st.header("Step 2: Select Strategic Imperatives")
-    selected_strategics = st.multiselect("Select up to 3 Strategic Imperatives", options=filter_strategic_imperatives(matrix_df, role_selected, lifecycle_selected, journey_selected), max_selections=3, key="strategic_multiselect")
-    if len(selected_strategics) == 3:
-        st.write("Selected options: " + ", ".join(selected_strategics))
-        if st.button("Edit Selection", key="edit_strategic"):
-            st.session_state["strategic_multiselect"] = []
-            st.experimental_rerun()
+    strategic_options = filter_strategic_imperatives(matrix_df, role_selected, lifecycle_selected, journey_selected)
+    if not strategic_options:
+        st.warning("No strategic imperatives found for these selections. Please try different options.")
+    else:
+        selected_strategics = st.multiselect("Select up to 3 Strategic Imperatives", options=strategic_options, max_selections=3)
     
     if selected_strategics and len(selected_strategics) > 0:
         st.header("Step 3: Select Product Differentiators")
@@ -278,7 +276,10 @@ if (role_selected != role_placeholder and lifecycle_selected != lifecycle_placeh
                     if row.empty:
                         st.info(f"No tactic found for strategic imperative: {imperative}")
                         continue
-                    tactic = row["HCP Engagement"].iloc[0] if role_selected == "HCP" else row["Patient & Caregiver"].iloc[0]
+                    if role_selected == "HCP":
+                        tactic = row["HCP Engagement"].iloc[0]
+                    else:
+                        tactic = row["Patient & Caregiver"].iloc[0]
                     ai_output = generate_ai_output(tactic, selected_differentiators)
                     st.subheader(f"{imperative}: {tactic}")
                     st.write(ai_output.get("description", "No description available."))
