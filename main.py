@@ -202,7 +202,7 @@ with st.sidebar:
             <li class="active"><a href="#" style="display:block; padding: 2px 5px;">Tactical Plans</a></li>
             <li><a href="https://costcalculator-5zcyncr2pzv4baam2w54e6.streamlit.app/">Cost Calculator</a></li>
             <li><a href="#">Strategic Imperatives</a></li>
-            <li><a href="https://landscapeassessment-dnjxq2mzzamu4ekog5y2ew.streamlit.app/">Landscape Analysis</a></li>
+            <li><a href="https://landscapeassessment-dnjxq2mzzamu4ekog5y2ew.streamlit.app/" target="_self">Landscape Analysis</a></li>
             <li><a href="#">Pipeline Outlook</a></li>
             <li><a href="#">Create Messaging</a></li>
             <li><a href="#">Campaign Concepts</a></li>
